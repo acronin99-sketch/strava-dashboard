@@ -22,6 +22,14 @@ export type StravaActivity = {
   total_elevation_gain: number;
   average_speed: number;
   average_heartrate?: number;
+  max_heartrate?: number;
+  /** Strava estimates this when no power meter is present; see `device_watts`. */
+  average_watts?: number;
+  /** Strava's normalized power. Only present for power-meter rides. */
+  weighted_average_watts?: number;
+  max_watts?: number;
+  /** True when watts came from a real power meter rather than an estimate. */
+  device_watts?: boolean;
 };
 
 type TokenResponse = {

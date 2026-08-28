@@ -38,23 +38,85 @@ export function formatPace(minPerMile: number | null): string {
   return `${minutes}:${String(seconds).padStart(2, "0")}`;
 }
 
+export type SportGroup = "all" | "run" | "ride";
+
+const RUN_TYPES = new Set(["Run", "TrailRun", "VirtualRun"]);
+const RIDE_TYPES = new Set([
+  "Ride",
+  "GravelRide",
+  "MountainBikeRide",
+  "VirtualRide",
+  "EBikeRide",
+  "Handcycle",
+  "Velomobile",
+]);
+
+export function sportOf(activity: StravaActivity): string {
+  return activity.sport_type || activity.type || "Other";
+}
+
+export function filterSport(
+  activities: StravaActivity[],
+  group: SportGroup,
+): StravaActivity[] {
+  if (group === "all") return activities;
+  const types = group === "run" ? RUN_TYPES : RIDE_TYPES;
+  return activities.filter((activity) => types.has(sportOf(activity)));
+}
+
+/**
+ * Normalized power when a real power meter was used, else null. Strava
+ * estimates watts from speed for rides without one, which isn't comparable
+ * across activities, so those are excluded.
+ */
+export function wattsOf(activity: StravaActivity): number | null {
+  if (!activity.device_watts) return null;
+  return activity.weighted_average_watts ?? activity.average_watts ?? null;
+}
+
 export type Totals = {
   count: number;
   miles: number;
   movingSeconds: number;
   elevationFeet: number;
+  /** Time-weighted, over activities that recorded it. Null when none did. */
+  avgHeartrate: number | null;
+  avgWatts: number | null;
 };
 
 export function totals(activities: StravaActivity[]): Totals {
-  return activities.reduce<Totals>(
-    (acc, activity) => ({
-      count: acc.count + 1,
-      miles: acc.miles + toMiles(activity.distance),
-      movingSeconds: acc.movingSeconds + activity.moving_time,
-      elevationFeet: acc.elevationFeet + toFeet(activity.total_elevation_gain),
-    }),
-    { count: 0, miles: 0, movingSeconds: 0, elevationFeet: 0 },
-  );
+  let miles = 0;
+  let movingSeconds = 0;
+  let elevationFeet = 0;
+  let hrSeconds = 0;
+  let hrWeighted = 0;
+  let wattSeconds = 0;
+  let wattWeighted = 0;
+
+  for (const activity of activities) {
+    miles += toMiles(activity.distance);
+    movingSeconds += activity.moving_time;
+    elevationFeet += toFeet(activity.total_elevation_gain);
+
+    if (activity.average_heartrate) {
+      hrSeconds += activity.moving_time;
+      hrWeighted += activity.average_heartrate * activity.moving_time;
+    }
+    const watts = wattsOf(activity);
+    if (watts !== null) {
+      wattSeconds += activity.moving_time;
+      wattWeighted += watts * activity.moving_time;
+    }
+  }
+
+  return {
+    count: activities.length,
+    miles,
+    movingSeconds,
+    elevationFeet,
+    avgHeartrate: hrSeconds > 0 ? hrWeighted / hrSeconds : null,
+    avgWatts: wattSeconds > 0 ? wattWeighted / wattSeconds : null,
+  };
 }
 
 /** Monday-start week key, derived from the activity's local start date. */
@@ -143,41 +205,74 @@ export function bySport(activities: StravaActivity[]): SportBreakdown[] {
     .sort((a, b) => b.miles - a.miles);
 }
 
-export type PacePoint = {
+export function mphOf(activity: StravaActivity): number | null {
+  if (activity.moving_time <= 0) return null;
+  return toMiles(activity.distance) / (activity.moving_time / 3600);
+}
+
+/**
+ * Aerobic efficiency: meters covered per minute, per heartbeat. Comparing the
+ * same athlete over time, a rising value means more speed for the same effort.
+ */
+export function efficiencyFactor(activity: StravaActivity): number | null {
+  if (!activity.average_heartrate || activity.moving_time <= 0) return null;
+  const metersPerMinute = activity.distance / (activity.moving_time / 60);
+  return metersPerMinute / activity.average_heartrate;
+}
+
+export type TrendPoint = {
   date: string;
   label: string;
-  pace: number;
-  miles: number;
   name: string;
+  miles: number;
+  /** Minutes per mile. */
+  pace: number | null;
+  mph: number | null;
+  heartrate: number | null;
+  /** Normalized power, power-meter rides only. */
+  watts: number | null;
+  efficiency: number | null;
 };
 
 /**
- * Pace trend for a single sport, oldest-first. Filtered to runs by default
- * since pace is only comparable within a sport.
+ * Per-activity trend series, oldest-first. Callers filter by sport first, since
+ * pace and power are only comparable within a sport.
  */
-export function paceTrend(
+export function activityTrend(
   activities: StravaActivity[],
-  sport = "Run",
   limit = 30,
-): PacePoint[] {
+): TrendPoint[] {
   return activities
-    .filter((activity) => (activity.sport_type || activity.type) === sport)
+    .slice(0, limit)
     .map((activity) => {
       const pace = paceMinPerMile(activity);
-      if (pace === null) return null;
-      const date = new Date(activity.start_date_local);
+      const mph = mphOf(activity);
+      const efficiency = efficiencyFactor(activity);
       return {
         date: activity.start_date_local,
-        label: date.toLocaleDateString(undefined, {
-          month: "short",
-          day: "numeric",
-        }),
-        pace: Number(pace.toFixed(2)),
-        miles: Number(toMiles(activity.distance).toFixed(1)),
+        label: new Date(activity.start_date_local).toLocaleDateString(
+          undefined,
+          { month: "short", day: "numeric" },
+        ),
         name: activity.name,
+        miles: Number(toMiles(activity.distance).toFixed(1)),
+        pace: pace === null ? null : Number(pace.toFixed(2)),
+        mph: mph === null ? null : Number(mph.toFixed(1)),
+        heartrate: activity.average_heartrate
+          ? Math.round(activity.average_heartrate)
+          : null,
+        watts: wattsOf(activity),
+        efficiency:
+          efficiency === null ? null : Number(efficiency.toFixed(3)),
       };
     })
-    .filter((point): point is PacePoint => point !== null)
-    .slice(0, limit)
     .reverse();
+}
+
+/** True when at least one point in the series has a value for `key`. */
+export function hasMetric(
+  points: TrendPoint[],
+  key: "pace" | "mph" | "heartrate" | "watts" | "efficiency",
+): boolean {
+  return points.some((point) => point[key] !== null);
 }

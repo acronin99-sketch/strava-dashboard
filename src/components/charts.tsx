@@ -14,7 +14,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import type { PacePoint, SportBreakdown, WeeklyPoint } from "@/lib/stats";
+import type { SportBreakdown, TrendPoint, WeeklyPoint } from "@/lib/stats";
 import { formatPace } from "@/lib/stats";
 
 const STRAVA_ORANGE = "#fc4c02";
@@ -86,7 +86,25 @@ export function ElevationChart({ data }: { data: WeeklyPoint[] }) {
   );
 }
 
-export function PaceChart({ data }: { data: PacePoint[] }) {
+type MetricKey = "pace" | "mph" | "heartrate" | "watts" | "efficiency";
+
+function TrendChart({
+  data,
+  dataKey,
+  name,
+  color,
+  reversed = false,
+  domain = ["auto", "auto"],
+  format,
+}: {
+  data: TrendPoint[];
+  dataKey: MetricKey;
+  name: string;
+  color: string;
+  reversed?: boolean;
+  domain?: [string, string];
+  format: (value: number) => string;
+}) {
   return (
     <ResponsiveContainer width="100%" height={240}>
       <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -8 }}>
@@ -94,36 +112,96 @@ export function PaceChart({ data }: { data: PacePoint[] }) {
         <XAxis dataKey="label" {...axisProps} />
         <YAxis
           {...axisProps}
-          // Faster pace is a lower number, so invert for an intuitive read:
-          // up on the chart means faster.
-          reversed
-          domain={["dataMin - 0.5", "dataMax + 0.5"]}
-          tickFormatter={(value: number) => formatPace(value)}
+          reversed={reversed}
+          domain={domain}
+          tickFormatter={(value: number) => format(value)}
         />
         <Tooltip
           {...tooltipProps}
-          formatter={(value: unknown) => [
-            `${formatPace(Number(value))} /mi`,
-            "Pace",
-          ]}
+          formatter={(value: unknown) => [format(Number(value)), name]}
           labelFormatter={(
             label: unknown,
             payload: readonly { payload?: unknown }[],
           ) => {
-            const point = payload?.[0]?.payload as PacePoint | undefined;
+            const point = payload?.[0]?.payload as TrendPoint | undefined;
             return point ? `${label} — ${point.name}` : String(label ?? "");
           }}
         />
         <Line
           type="monotone"
-          dataKey="pace"
-          stroke={STRAVA_ORANGE}
+          dataKey={dataKey}
+          stroke={color}
           strokeWidth={2}
-          dot={{ r: 3, fill: STRAVA_ORANGE }}
+          dot={{ r: 3, fill: color }}
           activeDot={{ r: 5 }}
+          connectNulls
         />
       </LineChart>
     </ResponsiveContainer>
+  );
+}
+
+export function PaceChart({ data }: { data: TrendPoint[] }) {
+  return (
+    <TrendChart
+      data={data}
+      dataKey="pace"
+      name="Pace"
+      color={STRAVA_ORANGE}
+      // Faster pace is a lower number, so invert for an intuitive read:
+      // up on the chart means faster.
+      reversed
+      domain={["dataMin - 0.5", "dataMax + 0.5"]}
+      format={(value) => `${formatPace(value)} /mi`}
+    />
+  );
+}
+
+export function SpeedChart({ data }: { data: TrendPoint[] }) {
+  return (
+    <TrendChart
+      data={data}
+      dataKey="mph"
+      name="Speed"
+      color={STRAVA_ORANGE}
+      format={(value) => `${value.toFixed(1)} mph`}
+    />
+  );
+}
+
+export function HeartRateChart({ data }: { data: TrendPoint[] }) {
+  return (
+    <TrendChart
+      data={data}
+      dataKey="heartrate"
+      name="Avg HR"
+      color="#f472b6"
+      format={(value) => `${Math.round(value)} bpm`}
+    />
+  );
+}
+
+export function PowerChart({ data }: { data: TrendPoint[] }) {
+  return (
+    <TrendChart
+      data={data}
+      dataKey="watts"
+      name="Normalized power"
+      color="#a78bfa"
+      format={(value) => `${Math.round(value)} W`}
+    />
+  );
+}
+
+export function EfficiencyChart({ data }: { data: TrendPoint[] }) {
+  return (
+    <TrendChart
+      data={data}
+      dataKey="efficiency"
+      name="Efficiency"
+      color="#38bdf8"
+      format={(value) => value.toFixed(2)}
+    />
   );
 }
 
