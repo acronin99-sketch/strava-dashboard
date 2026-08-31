@@ -154,7 +154,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
 
   let activities;
   try {
-    activities = await fetchActivities(session, 200);
+    activities = await fetchActivities(session);
   } catch (err) {
     return (
       <ErrorScreen
@@ -172,6 +172,15 @@ export default async function Home({ searchParams }: PageProps<"/">) {
   const sports = bySport(scoped);
   const trend = activityTrend(scoped, 30);
   const recent = scoped.slice(0, 10);
+
+  // `scoped` is newest-first, so the oldest activity is the last one.
+  const oldest = scoped[scoped.length - 1];
+  const since = oldest
+    ? new Date(oldest.start_date_local).toLocaleDateString(undefined, {
+        month: "short",
+        year: "numeric",
+      })
+    : null;
 
   const showSpeed = sport === "ride";
   const showHeartrate = recent.some((a) => a.average_heartrate);
@@ -194,7 +203,8 @@ export default async function Home({ searchParams }: PageProps<"/">) {
               {session.athlete.firstName} {session.athlete.lastName}
             </h1>
             <p className="text-xs text-zinc-500">
-              Last {summary.count} activities
+              {summary.count.toLocaleString()} activities
+              {since && ` since ${since}`}
             </p>
           </div>
         </div>
@@ -284,7 +294,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
           </Card>
         )}
         {sport === "all" && (
-          <Card title="Distance by sport" subtitle="All fetched activities">
+          <Card title="Distance by sport" subtitle="All time">
             <SportChart data={sports} />
           </Card>
         )}

@@ -121,20 +121,25 @@ async function ensureFreshSession(session: Session): Promise<Session> {
   return refreshed;
 }
 
+/** Strava caps `per_page` at 200. */
+const PER_PAGE = 200;
+/** Safety valve so a misbehaving response can't page forever. */
+const MAX_PAGES = 100;
+
 /**
- * Fetches activities newest-first, paging until `limit` is reached or Strava
- * runs out. Strava caps `per_page` at 200.
+ * Fetches the athlete's full activity history, newest-first, paging until
+ * Strava runs out. Per-sport views need the whole history rather than a slice
+ * of a shared page-one, since a single fixed cap would leave the less frequent
+ * sport with only a handful of activities.
  */
 export async function fetchActivities(
   session: Session,
-  limit = 200,
 ): Promise<StravaActivity[]> {
   const fresh = await ensureFreshSession(session);
   const activities: StravaActivity[] = [];
-  const perPage = Math.min(limit, 200);
 
-  for (let page = 1; activities.length < limit; page++) {
-    const url = `${STRAVA_API}/athlete/activities?per_page=${perPage}&page=${page}`;
+  for (let page = 1; page <= MAX_PAGES; page++) {
+    const url = `${STRAVA_API}/athlete/activities?per_page=${PER_PAGE}&page=${page}`;
     const res = await fetch(url, {
       headers: { Authorization: `Bearer ${fresh.accessToken}` },
       cache: "no-store",
@@ -146,8 +151,8 @@ export async function fetchActivities(
 
     const batch: StravaActivity[] = await res.json();
     activities.push(...batch);
-    if (batch.length < perPage) break;
+    if (batch.length < PER_PAGE) break;
   }
 
-  return activities.slice(0, limit);
+  return activities;
 }
