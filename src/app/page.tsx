@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { readSession } from "@/lib/session";
 import { fetchActivities } from "@/lib/strava";
 import {
@@ -208,14 +209,22 @@ export default async function Home({ searchParams }: PageProps<"/">) {
             </p>
           </div>
         </div>
-        <form action="/api/auth/logout" method="post">
-          <button
-            type="submit"
+        <div className="flex gap-2">
+          <Link
+            href="/coach"
             className="rounded-lg border border-zinc-800 px-3 py-1.5 text-xs text-zinc-400 transition-colors hover:bg-zinc-900 hover:text-zinc-200"
           >
-            Disconnect
-          </button>
-        </form>
+            Coach
+          </Link>
+          <form action="/api/auth/logout" method="post">
+            <button
+              type="submit"
+              className="rounded-lg border border-zinc-800 px-3 py-1.5 text-xs text-zinc-400 transition-colors hover:bg-zinc-900 hover:text-zinc-200"
+            >
+              Disconnect
+            </button>
+          </form>
+        </div>
       </header>
 
       <SportTabs active={sport} />

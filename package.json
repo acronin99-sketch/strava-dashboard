@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:fixtures": "NODE_OPTIONS=--require=./scripts/stub-strava.cjs next dev --port 3003",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
