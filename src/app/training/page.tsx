@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { useState } from 'react';
 import { TrainingWorkout, WeekSummary } from '@/lib/training/types';
 import { WeekView } from '@/components/training/WeekView';
 import { WeekSummaryTable } from '@/components/training/WeekSummaryTable';
@@ -10,25 +11,24 @@ export default function TrainingPlanPage() {
   const [weeks, setWeeks] = useState<WeekSummary[]>([]);
   const [selectedWeek, setSelectedWeek] = useState<WeekSummary | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [planId] = useState('mock-plan-1'); // TODO: get from URL or session
+  const [planId, setPlanId] = useState('');
 
-  useEffect(() => {
-    fetchWeeks();
-  }, [planId]);
+  const handleLoadPlan = async () => {
+    if (!planId.trim()) return;
 
-  const fetchWeeks = async () => {
     setIsLoading(true);
     try {
       const response = await fetch(`/api/training/weeks?planId=${planId}`);
       if (!response.ok) throw new Error('Failed to fetch weeks');
       const data = await response.json();
       setWeeks(data.weeks);
-      if (data.weeks.length > 0 && !selectedWeek) {
+      if (data.weeks.length > 0) {
         setSelectedWeek(data.weeks[0]);
+        setView('overview');
       }
     } catch (err) {
       console.error('Error fetching weeks:', err);
-      alert('Failed to load training plan. Make sure Supabase is configured.');
+      alert('Failed to load training plan. Check the plan ID and try again.');
     } finally {
       setIsLoading(false);
     }
@@ -43,7 +43,6 @@ export default function TrainingPlanPage() {
       });
       if (!response.ok) throw new Error('Failed to save workout');
 
-      // Update local state
       if (selectedWeek) {
         const updatedWorkouts = selectedWeek.workouts.map((w) =>
           w.id === workoutId ? { ...w, ...updates } : w
@@ -76,22 +75,77 @@ export default function TrainingPlanPage() {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Training Plan</h1>
-            <p className="text-gray-600 mt-1">Log and track your training workouts</p>
+  if (weeks.length === 0) {
+    return (
+      <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-10">
+        <div className="mb-8">
+          <Link
+            href="/"
+            className="inline-flex items-center text-xs text-zinc-400 transition-colors hover:text-zinc-200 mb-4"
+          >
+            ← Back to dashboard
+          </Link>
+          <h1 className="text-3xl font-bold tracking-tight">Training Plan</h1>
+          <p className="mt-2 text-sm text-zinc-400">
+            Log and review your training workouts week by week
+          </p>
+        </div>
+
+        <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-8">
+          <div className="max-w-md">
+            <h2 className="text-lg font-semibold text-zinc-200 mb-4">Load a training plan</h2>
+            <p className="text-sm text-zinc-500 mb-6">
+              Enter your plan ID to view your training log. Plans are stored in Supabase.
+            </p>
+            <div className="space-y-3">
+              <input
+                type="text"
+                value={planId}
+                onChange={(e) => setPlanId(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleLoadPlan()}
+                placeholder="Enter plan ID (e.g., mock-plan-1)"
+                className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:border-zinc-600 focus:outline-none"
+              />
+              <button
+                onClick={handleLoadPlan}
+                disabled={isLoading || !planId.trim()}
+                className="w-full rounded-lg bg-zinc-800 px-4 py-2 text-sm font-medium text-zinc-100 transition-colors hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoading ? 'Loading...' : 'Load Plan'}
+              </button>
+            </div>
           </div>
-          <div className="flex gap-2">
+        </div>
+      </main>
+    );
+  }
+
+  return (
+    <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-10">
+      {/* Header */}
+      <div className="mb-8 flex items-center justify-between gap-4">
+        <div>
+          <Link
+            href="/"
+            className="inline-flex items-center text-xs text-zinc-400 transition-colors hover:text-zinc-200 mb-4"
+          >
+            ← Back to dashboard
+          </Link>
+          <h1 className="text-lg font-semibold tracking-tight text-zinc-100">
+            {selectedWeek && view === 'detail'
+              ? `Week of ${new Date(selectedWeek.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+              : 'Training Plan'}
+          </h1>
+        </div>
+        {weeks.length > 0 && (
+          <nav className="inline-flex gap-1 rounded-xl border border-zinc-800 bg-zinc-950/60 p-1">
             <button
               onClick={() => setView('overview')}
-              className={`px-4 py-2 rounded font-semibold transition-colors ${
+              aria-current={view === 'overview' ? 'page' : undefined}
+              className={`rounded-lg px-4 py-1.5 text-sm transition-colors ${
                 view === 'overview'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  ? 'bg-zinc-800 font-medium text-zinc-100'
+                  : 'text-zinc-400 hover:text-zinc-200'
               }`}
             >
               Overview
@@ -99,44 +153,43 @@ export default function TrainingPlanPage() {
             <button
               onClick={() => setView('detail')}
               disabled={!selectedWeek}
-              className={`px-4 py-2 rounded font-semibold transition-colors ${
+              aria-current={view === 'detail' ? 'page' : undefined}
+              className={`rounded-lg px-4 py-1.5 text-sm transition-colors ${
                 view === 'detail'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50'
+                  ? 'bg-zinc-800 font-medium text-zinc-100'
+                  : 'text-zinc-400 hover:text-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed'
               }`}
             >
               Detail
             </button>
-          </div>
-        </div>
-
-        {/* Main Content */}
-        {view === 'overview' ? (
-          <div className="bg-white rounded-lg shadow">
-            <div className="p-6">
-              <WeekSummaryTable
-                weeks={weeks}
-                selectedWeekStart={selectedWeek?.start_date}
-                onWeekSelect={handleWeekSelect}
-                isLoading={isLoading}
-              />
-            </div>
-          </div>
-        ) : selectedWeek ? (
-          <div className="bg-white rounded-lg shadow p-6">
-            <WeekView
-              week={selectedWeek}
-              onWorkoutSave={handleWorkoutSave}
-              onWeekChange={handleWeekChange}
-              isLoading={isLoading}
-            />
-          </div>
-        ) : (
-          <div className="bg-white rounded-lg shadow p-8 text-center text-gray-500">
-            Select a week to view details
-          </div>
+          </nav>
         )}
       </div>
-    </div>
+
+      {/* Main Content */}
+      {view === 'overview' ? (
+        <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-5">
+          <WeekSummaryTable
+            weeks={weeks}
+            selectedWeekStart={selectedWeek?.start_date}
+            onWeekSelect={handleWeekSelect}
+            isLoading={isLoading}
+          />
+        </div>
+      ) : selectedWeek ? (
+        <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-5">
+          <WeekView
+            week={selectedWeek}
+            onWorkoutSave={handleWorkoutSave}
+            onWeekChange={handleWeekChange}
+            isLoading={isLoading}
+          />
+        </div>
+      ) : (
+        <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-8 text-center text-zinc-500">
+          Select a week to view details
+        </div>
+      )}
+    </main>
   );
 }

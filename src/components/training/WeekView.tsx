@@ -26,8 +26,8 @@ export function WeekView({ week, onWorkoutSave, isLoading, onWeekChange }: WeekV
       {/* Week Header & Stats */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold">Week of {startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</h2>
-          <div className="text-sm text-gray-600 mt-1">
+          <h2 className="text-lg font-semibold text-zinc-100">Week of {startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</h2>
+          <div className="text-xs text-zinc-500 mt-1">
             {week.running_miles.toFixed(1)} mi run • {week.xtraining_miles.toFixed(1)} mi x-train
             {week.avg_rpe && ` • Avg RPE: ${week.avg_rpe.toFixed(1)}`}
             {` • Workload: ${week.workload.toFixed(1)}`}
@@ -39,13 +39,13 @@ export function WeekView({ week, onWorkoutSave, isLoading, onWeekChange }: WeekV
         <div className="flex gap-2">
           <button
             onClick={() => onWeekChange?.('prev')}
-            className="px-3 py-2 border border-gray-200 rounded text-sm hover:bg-gray-50"
+            className="px-3 py-2 border border-zinc-700 rounded text-xs hover:bg-zinc-900 transition-colors"
           >
             ← Prev
           </button>
           <button
             onClick={() => onWeekChange?.('next')}
-            className="px-3 py-2 border border-gray-200 rounded text-sm hover:bg-gray-50"
+            className="px-3 py-2 border border-zinc-700 rounded text-xs hover:bg-zinc-900 transition-colors"
           >
             Next →
           </button>
