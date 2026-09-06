@@ -211,6 +211,12 @@ export default async function Home({ searchParams }: PageProps<"/">) {
         </div>
         <div className="flex gap-2">
           <Link
+            href="/training"
+            className="rounded-lg border border-zinc-800 px-3 py-1.5 text-xs text-zinc-400 transition-colors hover:bg-zinc-900 hover:text-zinc-200"
+          >
+            Training
+          </Link>
+          <Link
             href="/coach"
             className="rounded-lg border border-zinc-800 px-3 py-1.5 text-xs text-zinc-400 transition-colors hover:bg-zinc-900 hover:text-zinc-200"
           >
