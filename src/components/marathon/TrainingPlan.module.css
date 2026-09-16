@@ -66,6 +66,13 @@
   font-weight: 500;
 }
 
+.actual {
+  text-align: center;
+  width: 70px;
+  font-weight: 600;
+  color: #ff6b6b;
+}
+
 .downWeek {
   background-color: #f0f8f8;
 }

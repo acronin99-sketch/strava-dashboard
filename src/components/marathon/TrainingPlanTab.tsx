@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import styles from './TrainingPlan.module.css'
 
 interface Week {
@@ -16,6 +17,8 @@ interface Week {
   sat: string
   sun: string
 }
+
+type WeeklyStats = Record<string, { mileage: number; activities: number }>
 
 const weeks: Week[] = [
   {
@@ -241,6 +244,30 @@ const weeks: Week[] = [
 ]
 
 export default function TrainingPlanTab() {
+  const [stats, setStats] = useState<WeeklyStats>({})
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/marathon/weekly-stats')
+      .then((res) => res.json())
+      .then(setStats)
+      .catch(console.error)
+      .finally(() => setLoading(false))
+  }, [])
+
+  const getStatusIndicator = (weekNum: number): string => {
+    const stat = stats[weekNum.toString()]
+    if (!stat) return '—'
+
+    const planned = parseFloat((weeks.find((w) => w.number === weekNum)?.mileage || '0').split('–')[0])
+    const actual = Math.round(stat.mileage * 10) / 10
+    const diff = actual - planned
+
+    if (Math.abs(diff) <= 2) return '✓' // Within 2 miles
+    if (diff > 2) return `+${Math.round(diff)}`
+    return `${Math.round(diff)}`
+  }
+
   return (
     <section className={styles.planContainer}>
       <div className={styles.header}>
@@ -254,7 +281,8 @@ export default function TrainingPlanTab() {
             <tr>
               <th>Wk</th>
               <th>Dates</th>
-              <th>Miles</th>
+              <th>Plan</th>
+              <th>Actual</th>
               <th>Mon</th>
               <th>Tue</th>
               <th>Wed</th>
@@ -273,6 +301,7 @@ export default function TrainingPlanTab() {
                 <td className={styles.weekNum}>{week.number}</td>
                 <td>{week.dateRange}</td>
                 <td className={styles.miles}>{week.mileage}</td>
+                <td className={styles.actual}>{loading ? '…' : getStatusIndicator(week.number)}</td>
                 <td>{week.mon}</td>
                 <td>{week.tue}</td>
                 <td>{week.wed}</td>
