@@ -42,3 +42,4 @@ next-env.d.ts
 
 # Keep the template committed; real secrets stay in .env.local
 !.env.example
+.claude/
