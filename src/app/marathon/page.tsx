@@ -5,6 +5,8 @@ export const metadata = {
   description: '2:55 Marathon Goal - Surf City Marathon Feb 7, 2027',
 }
 
+export const revalidate = false
+
 export default function MarathonPage() {
   return (
     <div>
