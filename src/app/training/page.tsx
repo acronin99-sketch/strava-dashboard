@@ -5,8 +5,12 @@ import { useState } from 'react';
 import { TrainingWorkout, WeekSummary } from '@/lib/training/types';
 import { WeekView } from '@/components/training/WeekView';
 import { WeekSummaryTable } from '@/components/training/WeekSummaryTable';
+import MarathonTrainingDashboard from '@/components/marathon/MarathonTrainingDashboard';
+
+type Tab = 'plans' | 'marathon';
 
 export default function TrainingPlanPage() {
+  const [tab, setTab] = useState<Tab>('marathon');
   const [view, setView] = useState<'overview' | 'detail'>('overview');
   const [weeks, setWeeks] = useState<WeekSummary[]>([]);
   const [selectedWeek, setSelectedWeek] = useState<WeekSummary | null>(null);
@@ -75,6 +79,52 @@ export default function TrainingPlanPage() {
     }
   };
 
+  if (tab === 'marathon') {
+    return (
+      <main className="mx-auto w-full max-w-7xl flex-1 px-6 py-10">
+        <div className="mb-8">
+          <Link
+            href="/"
+            className="inline-flex items-center text-xs text-zinc-400 transition-colors hover:text-zinc-200 mb-4"
+          >
+            ← Back to dashboard
+          </Link>
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Training</h1>
+              <p className="mt-2 text-sm text-zinc-400">Marathon training plan and workouts</p>
+            </div>
+            <nav className="inline-flex gap-1 rounded-xl border border-zinc-800 bg-zinc-950/60 p-1">
+              <button
+                onClick={() => setTab('marathon')}
+                aria-current={tab === 'marathon' ? 'page' : undefined}
+                className={`rounded-lg px-4 py-1.5 text-sm transition-colors ${
+                  tab === 'marathon'
+                    ? 'bg-zinc-800 font-medium text-zinc-100'
+                    : 'text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                Marathon
+              </button>
+              <button
+                onClick={() => setTab('plans')}
+                aria-current={tab === 'plans' ? 'page' : undefined}
+                className={`rounded-lg px-4 py-1.5 text-sm transition-colors ${
+                  tab === 'plans'
+                    ? 'bg-zinc-800 font-medium text-zinc-100'
+                    : 'text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                Logs
+              </button>
+            </nav>
+          </div>
+        </div>
+        <MarathonTrainingDashboard />
+      </main>
+    );
+  }
+
   if (weeks.length === 0) {
     return (
       <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-10">
@@ -85,12 +135,35 @@ export default function TrainingPlanPage() {
           >
             ← Back to dashboard
           </Link>
-          <h1 className="text-3xl font-bold tracking-tight">Training Plan</h1>
-          <p className="mt-2 text-sm text-zinc-400">
-            Log and review your training workouts week by week
-          </p>
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Training</h1>
+              <p className="mt-2 text-sm text-zinc-400">Log and review your training workouts</p>
+            </div>
+            <nav className="inline-flex gap-1 rounded-xl border border-zinc-800 bg-zinc-950/60 p-1">
+              <button
+                onClick={() => setTab('marathon')}
+                className={`rounded-lg px-4 py-1.5 text-sm transition-colors ${
+                  tab === 'marathon'
+                    ? 'bg-zinc-800 font-medium text-zinc-100'
+                    : 'text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                Marathon
+              </button>
+              <button
+                onClick={() => setTab('plans')}
+                className={`rounded-lg px-4 py-1.5 text-sm transition-colors ${
+                  tab === 'plans'
+                    ? 'bg-zinc-800 font-medium text-zinc-100'
+                    : 'text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                Logs
+              </button>
+            </nav>
+          </div>
         </div>
-
         <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-8">
           <div className="max-w-md">
             <h2 className="text-lg font-semibold text-zinc-200 mb-4">Load a training plan</h2>
@@ -122,7 +195,6 @@ export default function TrainingPlanPage() {
 
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-10">
-      {/* Header */}
       <div className="mb-8 flex items-center justify-between gap-4">
         <div>
           <Link
@@ -134,14 +206,35 @@ export default function TrainingPlanPage() {
           <h1 className="text-lg font-semibold tracking-tight text-zinc-100">
             {selectedWeek && view === 'detail'
               ? `Week of ${new Date(selectedWeek.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
-              : 'Training Plan'}
+              : 'Training Logs'}
           </h1>
         </div>
+        <nav className="inline-flex gap-1 rounded-xl border border-zinc-800 bg-zinc-950/60 p-1">
+          <button
+            onClick={() => setTab('marathon')}
+            className={`rounded-lg px-4 py-1.5 text-sm transition-colors ${
+              tab === 'marathon'
+                ? 'bg-zinc-800 font-medium text-zinc-100'
+                : 'text-zinc-400 hover:text-zinc-200'
+            }`}
+          >
+            Marathon
+          </button>
+          <button
+            onClick={() => setTab('plans')}
+            className={`rounded-lg px-4 py-1.5 text-sm transition-colors ${
+              tab === 'plans'
+                ? 'bg-zinc-800 font-medium text-zinc-100'
+                : 'text-zinc-400 hover:text-zinc-200'
+            }`}
+          >
+            Logs
+          </button>
+        </nav>
         {weeks.length > 0 && (
           <nav className="inline-flex gap-1 rounded-xl border border-zinc-800 bg-zinc-950/60 p-1">
             <button
               onClick={() => setView('overview')}
-              aria-current={view === 'overview' ? 'page' : undefined}
               className={`rounded-lg px-4 py-1.5 text-sm transition-colors ${
                 view === 'overview'
                   ? 'bg-zinc-800 font-medium text-zinc-100'
@@ -153,7 +246,6 @@ export default function TrainingPlanPage() {
             <button
               onClick={() => setView('detail')}
               disabled={!selectedWeek}
-              aria-current={view === 'detail' ? 'page' : undefined}
               className={`rounded-lg px-4 py-1.5 text-sm transition-colors ${
                 view === 'detail'
                   ? 'bg-zinc-800 font-medium text-zinc-100'
@@ -166,7 +258,6 @@ export default function TrainingPlanPage() {
         )}
       </div>
 
-      {/* Main Content */}
       {view === 'overview' ? (
         <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-5">
           <WeekSummaryTable
