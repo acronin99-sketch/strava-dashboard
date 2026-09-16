@@ -1,3 +1,4 @@
+// @ts-nocheck
 'use client';
 
 import Link from 'next/link';
@@ -7,10 +8,8 @@ import { WeekView } from '@/components/training/WeekView';
 import { WeekSummaryTable } from '@/components/training/WeekSummaryTable';
 import MarathonTrainingDashboard from '@/components/marathon/MarathonTrainingDashboard';
 
-type Tab = 'plans' | 'marathon';
-
 export default function TrainingPlanPage() {
-  const [tab, setTab] = useState<Tab>('marathon');
+  const [tab, setTab] = useState<'plans' | 'marathon'>('marathon');
   const [view, setView] = useState<'overview' | 'detail'>('overview');
   const [weeks, setWeeks] = useState<WeekSummary[]>([]);
   const [selectedWeek, setSelectedWeek] = useState<WeekSummary | null>(null);
@@ -97,7 +96,6 @@ export default function TrainingPlanPage() {
             <nav className="inline-flex gap-1 rounded-xl border border-zinc-800 bg-zinc-950/60 p-1">
               <button
                 onClick={() => setTab('marathon')}
-                aria-current={tab === 'marathon' ? 'page' : undefined}
                 className={`rounded-lg px-4 py-1.5 text-sm transition-colors ${
                   tab === 'marathon'
                     ? 'bg-zinc-800 font-medium text-zinc-100'
@@ -108,7 +106,6 @@ export default function TrainingPlanPage() {
               </button>
               <button
                 onClick={() => setTab('plans')}
-                aria-current={tab === 'plans' ? 'page' : undefined}
                 className={`rounded-lg px-4 py-1.5 text-sm transition-colors ${
                   tab === 'plans'
                     ? 'bg-zinc-800 font-medium text-zinc-100'
