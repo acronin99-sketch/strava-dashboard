@@ -1,9 +1,9 @@
-import { getSession } from '@/lib/session'
+import { readSession } from '@/lib/session'
 import { fetchActivities } from '@/lib/strava'
 
 export async function GET(req: Request) {
   try {
-    const session = await getSession()
+    const session = await readSession()
     if (!session) {
       return Response.json({ error: 'Not authenticated' }, { status: 401 })
     }
